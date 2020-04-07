@@ -66,6 +66,8 @@ func ForConsumer(dataChan chan map[string]interface{}, keyChan chan []byte) {
 		pc.AsyncClose()
 	}()
 
+	var i int64 = 1
+
 	for msg := range pc.Messages() {
 		//fmt.Printf("Offset: %d\n", msg.Offset)
 		var value map[string]interface{}
@@ -75,12 +77,14 @@ func ForConsumer(dataChan chan map[string]interface{}, keyChan chan []byte) {
 		} else {
 			fmt.Printf("Value:  %s\n", string(msg.Value))
 		}
-		if msg.Offset == config.G_config.ConsumerNumber {
+		fmt.Println(i)
+		if i >= config.G_config.ConsumerNumber {
 			close(dataChan)
 			close(keyChan)
 			pc.AsyncClose()
 			break
 		}
+		i++
 	}
 
 	if err := c.Close(); err != nil {

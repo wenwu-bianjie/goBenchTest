@@ -1,6 +1,7 @@
 package synatx
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -68,10 +69,23 @@ func (nodes SyntaxNodes) MatchJson(data *map[string]interface{}) bool {
 			}
 		} else {
 			if s, ok := (*data)[v.Syntax.Field]; ok {
-				s := s.(string)
-				m = v.Syntax.MatchString(s)
-				if v.Syntax.IsNot {
-					m = !m
+				switch s.(type) {
+				case int:
+					s = strconv.Itoa(s.(int))
+				case int64:
+					s = strconv.FormatInt(s.(int64), 10)
+				case float64:
+					s = strconv.FormatInt(int64(s.(float64)), 10)
+				case float32:
+					s = strconv.FormatInt(int64(float64(s.(float32))), 10)
+				}
+
+				switch s.(type) {
+				case string:
+					m = v.Syntax.MatchString(s.(string))
+					if v.Syntax.IsNot {
+						m = !m
+					}
 				}
 			}
 		}

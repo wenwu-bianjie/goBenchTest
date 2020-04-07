@@ -9,7 +9,6 @@ import (
 	"github.com/wenwu-bianjie/goBenchTest/handleData/producer"
 	synatx "github.com/wenwu-bianjie/goBenchTest/handleData/syntax/simple_explain"
 	"github.com/wenwu-bianjie/goBenchTest/handleData/syntax/util"
-	"github.com/wenwu-bianjie/goBenchTest/handleData/transferTime"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +30,6 @@ func initArgs() {
 func main() {
 	t1 := time.Now()
 	var err error
-
 	// 初始化命令行参数
 	initArgs()
 
@@ -54,14 +52,17 @@ func main() {
 	go consumer.ForConsumer(dataChan, keyChan)
 
 	// 转换时间戳格式
-	nowTimeStamp := time.Now().UnixNano()
+	//nowTimeStamp := time.Now().UnixNano()
 	for data := range dataChan {
 		key := <-keyChan
-		if t, ok := data[config.ToTs]; ok {
-			if ts := transferTime.TransferTime(t.(string)); ts < nowTimeStamp {
-				//continue
-			}
-		}
+		//if t, ok := data[config.ToTs]; ok {
+		//	switch t.(type) {
+		//	case string:
+		//		if ts := transferTime.TransferTime(t.(string)); ts < nowTimeStamp {
+		//			//continue
+		//		}
+		//	}
+		//}
 
 		// IsSwtSucc_sql语法表达式匹配
 		res := isSwtSucc_sql_o.SyntaxNodes.MatchJson(&data)

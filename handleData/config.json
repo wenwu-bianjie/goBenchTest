@@ -4,7 +4,7 @@
   "consumer_partition": 0,
   "consumer_offset": "oldest",
   "consumer_verbose": false,
-  "consumer_number": 1500,
+  "consumer_number": 150,
   "producer_broker_list": "localhost:9092",
   "producer_topic": "test",
   "producer_partitioner": "hash",

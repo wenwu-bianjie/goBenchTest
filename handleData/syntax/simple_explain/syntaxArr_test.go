@@ -2,6 +2,9 @@ package synatx
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -146,4 +149,20 @@ func BenchmarkNewSyntaxANodes(b *testing.B) {
 			b.Error("MatchString fail")
 		}
 	}
+}
+
+func TestAa(t *testing.T) {
+	var s interface{} = 144.3
+	switch s.(type) {
+	case int:
+		s = strconv.Itoa(s.(int))
+	case int64:
+		s = strconv.FormatInt(s.(int64), 10)
+	case float64:
+		s = strconv.FormatInt(int64(s.(float64)), 10)
+	case float32:
+		s = strconv.FormatInt(int64(float64(s.(float32))), 10)
+	}
+
+	fmt.Println(reflect.TypeOf(s), s)
 }
