@@ -21,7 +21,7 @@ var (
 	logger = log.New(os.Stderr, "", log.LstdFlags)
 )
 
-func ForProducer(k, v string) {
+func GetProducer() (*sarama.AsyncProducer, error) {
 	if config.G_config.ProducerVerbose {
 		sarama.Logger = logger
 	}
@@ -36,41 +36,15 @@ func ForProducer(k, v string) {
 		log.Fatalf("Partitioner %s not supported.", config.G_config.ProducerPartitioner)
 	}
 
-	var keyEncoder, valueEncoder sarama.Encoder
-	//if *key != "" {
-	//	keyEncoder = sarama.StringEncoder(*key)
-	//}
-	//if *value != "" {
-	//	valueEncoder = sarama.StringEncoder(*value)
-	//}
-
-	if k != "" {
-		keyEncoder = sarama.StringEncoder(k)
-	}
-
-	if v != "" {
-		valueEncoder = sarama.StringEncoder(v)
-	}
-
 	conf := sarama.NewConfig()
 	conf.Producer.Partitioner = partitionerConstructor
 	conf.Producer.Return.Successes = true
 
-	producer, err := sarama.NewSyncProducer(strings.Split(config.G_config.ProducerBrokerList, ","), conf)
+	producer, err := sarama.NewAsyncProducer(strings.Split(config.G_config.ProducerBrokerList, ","), conf)
 	if err != nil {
 		logger.Fatalln("FAILED to open the producer:", err)
+		return nil, err
 	}
-	defer producer.Close()
 
-	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
-		Topic: config.G_config.ProducerTopic,
-		Key:   keyEncoder,
-		Value: valueEncoder,
-	})
-
-	if err != nil {
-		logger.Println("FAILED to produce message:", err)
-	} else {
-		//fmt.Printf("topic=%s\tpartition=%d\toffset=%d\n", config.G_config.ProducerTopic, partition, offset)
-	}
+	return &producer, err
 }

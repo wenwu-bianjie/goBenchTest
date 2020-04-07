@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/Shopify/sarama"
 	"github.com/wenwu-bianjie/goBenchTest/handleData/config"
+	"github.com/wenwu-bianjie/goBenchTest/handleData/producer"
+	synatx "github.com/wenwu-bianjie/goBenchTest/handleData/syntax/simple_explain"
 	"log"
 	"os"
 	"os/signal"
@@ -19,11 +21,11 @@ var (
 	//partition  = flag.Int("partition", 0, "The partition to consume")
 	//offset     = flag.String("offset", "oldest", "The offset to start with. Can be `oldest`, `newest`, or an actual offset")
 	//verbose    = flag.Bool("verbose", false, "Whether to turn on sarama logging")
-
 	logger = log.New(os.Stderr, "", log.LstdFlags)
+  	kafkaProducer *sarama.AsyncProducer
 )
 
-func ForConsumer(dataChan chan map[string]interface{}, keyChan chan []byte) {
+func ForConsumer(isSwtSucc_sql_o *synatx.SyntaxRes, ToTsExpression_o *synatx.SyntaxRes) {
 	flag.Parse()
 
 	if config.G_config.ConsumerVerbose {
@@ -53,16 +55,22 @@ func ForConsumer(dataChan chan map[string]interface{}, keyChan chan []byte) {
 	}
 
 	pc, err := c.ConsumePartition(config.G_config.ConsumerTopic, int32(config.G_config.ConsumerPartition), initialOffset)
+
 	if err != nil {
 		logger.Fatalln(err)
 	}
+
+	kafkaProducer, err = producer.GetProducer()
+
+	if err != nil {
+		logger.Fatalln(err)
+	}
+	defer (*kafkaProducer).Close()
 
 	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Kill, os.Interrupt)
 		<-signals
-		close(dataChan)
-		close(keyChan)
 		pc.AsyncClose()
 	}()
 
@@ -72,20 +80,40 @@ func ForConsumer(dataChan chan map[string]interface{}, keyChan chan []byte) {
 		//fmt.Printf("Offset: %d\n", msg.Offset)
 		var value map[string]interface{}
 		if err := json.Unmarshal(msg.Value, &value); err == nil {
-			dataChan <- value
-			keyChan <- msg.Key
+			// IsSwtSucc_sql语法表达式匹配
+			res := isSwtSucc_sql_o.SyntaxNodes.MatchJson(&value)
+			value[config.G_config.IsSwtSuccKey] = strconv.FormatBool(res)
+
+			// 监控对象识别
+			m := ToTsExpression_o.SyntaxNodes.MatchJson(&value)
+
+			if m {
+				// 发送给kafka
+				value, err := json.Marshal(value)
+				if err == nil {
+					var keyEncoder, valueEncoder sarama.Encoder
+					keyEncoder = sarama.StringEncoder(msg.Key)
+					valueEncoder = sarama.StringEncoder(value)
+
+					msg := &sarama.ProducerMessage{
+						Topic: config.G_config.ProducerTopic,
+						Key:   keyEncoder,
+						Value: valueEncoder,
+					}
+					(*kafkaProducer).Input() <- msg
+				}
+			}
 		} else {
 			fmt.Printf("Value:  %s\n", string(msg.Value))
 		}
-		fmt.Println(i)
+
 		if i >= config.G_config.ConsumerNumber {
-			close(dataChan)
-			close(keyChan)
 			pc.AsyncClose()
 			break
 		}
 		i++
 	}
+	fmt.Println(i)
 
 	if err := c.Close(); err != nil {
 		fmt.Println("Failed to close consumer: ", err)

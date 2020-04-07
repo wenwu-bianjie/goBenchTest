@@ -1,34 +1,23 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/wenwu-bianjie/goBenchTest/handleData/config"
 	"github.com/wenwu-bianjie/goBenchTest/handleData/consumer"
 	synatx "github.com/wenwu-bianjie/goBenchTest/handleData/syntax/simple_explain"
 	"github.com/wenwu-bianjie/goBenchTest/handleData/syntax/util"
 	"strings"
+	"testing"
 	"time"
 )
 
-var (
-	confFile string // 配置文件路径
-)
 
-// 解析命令行参数
-func initArgs() {
-	flag.StringVar(&confFile, "config", "./config.json", "指定config.json")
-	flag.Parse()
-}
-
-func main() {
-
+func BenchmarkSubstr(b *testing.B) {
 	var err error
 	// 初始化命令行参数
-	initArgs()
 
 	// 加载配置
-	if err = config.InitConfig(confFile); err != nil {
+	if err = config.InitConfig("./config.json"); err != nil {
 		fmt.Println(err)
 		return
 	}
